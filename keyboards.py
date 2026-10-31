@@ -127,37 +127,37 @@ def admin_menu():
             [
                 InlineKeyboardButton(
                     text="➕ Add App",
-                    callback_data="admin_add_app"
+                    callback_data="add_app"
                 )
             ],
             [
                 InlineKeyboardButton(
                     text="🎁 Add Loot",
-                    callback_data="admin_add_loot"
+                    callback_data="add_loot"
                 )
             ],
             [
                 InlineKeyboardButton(
                     text="📣 Promotion Requests",
-                    callback_data="admin_promotions"
+                    callback_data="promotions"
                 )
             ],
             [
                 InlineKeyboardButton(
                     text="👥 Users",
-                    callback_data="admin_users"
+                    callback_data="users"
                 )
             ],
             [
                 InlineKeyboardButton(
                     text="📊 Statistics",
-                    callback_data="admin_stats"
+                    callback_data="stats"
                 )
             ],
             [
                 InlineKeyboardButton(
                     text="📢 Broadcast",
-                    callback_data="admin_broadcast"
+                    callback_data="broadcast"
                 )
             ],
         ]

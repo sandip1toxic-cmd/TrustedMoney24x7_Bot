@@ -1,3 +1,4 @@
+
 from sqlalchemy import select
 
 from database import SessionLocal
@@ -10,12 +11,22 @@ async def add_loot(
     url: str,
     end_date: str | None = None,
 ):
+    title = title.strip()
+    description = description.strip()
+    url = url.strip()
+
+    if not title or not url:
+        raise ValueError("Title and URL are required.")
+
+    if not url.startswith(("https://", "http://")):
+        raise ValueError("Please provide a valid HTTP or HTTPS URL.")
+
     async with SessionLocal() as session:
         loot = Loot(
             title=title,
             description=description,
             url=url,
-            end_date=end_date,
+            end_date=end_date.strip() if end_date else None,
             status="Active",
             active=True,
         )
@@ -31,7 +42,10 @@ async def get_loots():
     async with SessionLocal() as session:
         result = await session.execute(
             select(Loot)
-            .where(Loot.active.is_(True))
+            .where(
+                Loot.active.is_(True),
+                Loot.status == "Active"
+            )
             .order_by(Loot.id.desc())
         )
 
@@ -55,3 +69,4 @@ async def deactivate_loot(loot_id: int):
         await session.commit()
 
         return True
+        

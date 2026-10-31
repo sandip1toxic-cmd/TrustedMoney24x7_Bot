@@ -1,8 +1,19 @@
+
+import asyncio
+
 from aiogram import Bot
 from services.user_service import get_all_user_ids
 
 
 async def send_notification(bot: Bot, message: str):
+    message = message.strip()
+
+    if not message:
+        raise ValueError("Notification message cannot be empty.")
+
+    if len(message) > 4000:
+        raise ValueError("Notification message is too long.")
+
     user_ids = await get_all_user_ids()
 
     success = 0
@@ -19,8 +30,11 @@ async def send_notification(bot: Bot, message: str):
         except Exception:
             failed += 1
 
+        await asyncio.sleep(0.05)
+
     return {
         "total": len(user_ids),
         "success": success,
         "failed": failed,
     }
+    

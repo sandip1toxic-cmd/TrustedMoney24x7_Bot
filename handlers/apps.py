@@ -1,3 +1,6 @@
+
+from html import escape
+
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
 from sqlalchemy import select
@@ -37,13 +40,15 @@ async def show_apps(callback: CallbackQuery):
         "category_apk": "APK",
     }
 
+    labels = {
+        "trending": "Trending",
+        "new_apps": "New",
+        "risk_alerts": "Risk Alerts",
+    }
+
     selected = category_map.get(
         callback.data,
-        {
-            "trending": "Trending",
-            "new_apps": "New",
-            "risk_alerts": "Risk"
-        }.get(callback.data, "Apps")
+        labels.get(callback.data, "Apps")
     )
 
     async with SessionLocal() as session:
@@ -54,7 +59,7 @@ async def show_apps(callback: CallbackQuery):
 
         if callback.data in category_map:
             query = query.where(
-                AppListing.category == selected
+                AppListing.category == category_map[callback.data]
             )
 
         elif callback.data == "trending":
@@ -69,17 +74,14 @@ async def show_apps(callback: CallbackQuery):
 
         if callback.data == "new_apps":
             query = query.order_by(
-                AppListing.launch_date.desc()
+                AppListing.created_at.desc()
             )
         else:
             query = query.order_by(
                 AppListing.id.desc()
             )
 
-        result = await session.execute(
-            query.limit(20)
-        )
-
+        result = await session.execute(query.limit(8))
         apps = result.scalars().all()
 
     if not apps:
@@ -94,19 +96,27 @@ async def show_apps(callback: CallbackQuery):
     lines = [f"📱 <b>{selected} Apps</b>\n"]
 
     for app in apps:
+        title = escape(app.title)
+        category = escape(app.category)
+        source = escape(app.source)
+        risk = escape(app.risk_status)
+        launch_date = escape(app.launch_date or "Not available")
+        description = escape((app.description or "")[:150])
+        url = escape(app.url, quote=True)
+
         lines.append(
-            f"• <b>{app.title}</b>\n"
-            f"Category: {app.category}\n"
-            f"Source: {app.source}\n"
-            f"Risk status: {app.risk_status}\n"
-            f"Launch date: {app.launch_date or 'Not available'}\n"
-            f"Details: {app.description[:250]}\n"
-            f"Link: {app.url}\n"
+            f"• <b>{title}</b>\n"
+            f"Category: {category}\n"
+            f"Source: {source}\n"
+            f"Risk status: {risk}\n"
+            f"Launch date: {launch_date}\n"
+            f"Details: {description}\n"
+            f'Link: <a href="{url}">Open App</a>\n'
         )
 
     lines.append(
         "\n⚠️ Earnings are not guaranteed. "
-        "Always check app terms and risks."
+        "Check app terms and risks before participating."
     )
 
     await callback.message.edit_text(
@@ -116,3 +126,4 @@ async def show_apps(callback: CallbackQuery):
     )
 
     await callback.answer()
+        

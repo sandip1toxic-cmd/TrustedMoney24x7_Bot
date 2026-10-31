@@ -546,17 +546,3 @@ async def broadcast_notice(callback: CallbackQuery):
     await callback.answer()
 
 
-# CANCEL
-
-@router.message(Command("cancel"))
-async def cancel_admin_form(message: Message, state: FSMContext):
-    if await state.get_state() is None:
-        return
-    await state.clear()
-    if is_owner(message.from_user.id):
-        await message.answer(
-            "❌ Operation cancelled.",
-            reply_markup=admin_menu()
-        )
-    else:
-        await message.answer("Operation cancelled.")

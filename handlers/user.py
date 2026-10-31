@@ -1,7 +1,14 @@
+
+from html import escape
+
 from aiogram import Router, F
 from aiogram.filters import CommandStart
-from aiogram.types import Message, CallbackQuery
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Message,
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+)
 
 from config import settings
 from keyboards import main_menu, back_button
@@ -32,11 +39,21 @@ async def check_channel_membership(bot, user_id: int) -> bool:
         return False
 
 
+async def save_user(user):
+    return await get_or_create_user(
+        telegram_id=user.id,
+        username=user.username,
+        full_name=user.full_name
+    )
+
+
 @router.message(CommandStart())
 async def start_handler(message: Message):
+    user = message.from_user
+
     is_joined = await check_channel_membership(
         message.bot,
-        message.from_user.id
+        user.id
     )
 
     if not is_joined:
@@ -65,14 +82,10 @@ async def start_handler(message: Message):
         )
         return
 
-    await get_or_create_user(
-        telegram_id=message.from_user.id,
-        username=message.from_user.username,
-        full_name=message.from_user.full_name
-    )
+    await save_user(user)
 
     await message.answer(
-        f"👋 Welcome, {message.from_user.first_name}!\n\n"
+        f"👋 Welcome, {escape(user.first_name)}!\n\n"
         "💰 Welcome to Trusted Money.\n"
         "Explore apps, rewards, updates and services below.\n\n"
         "⚠️ Earnings are not guaranteed. Always check "
@@ -83,16 +96,25 @@ async def start_handler(message: Message):
 
 @router.callback_query(F.data == "join_channel")
 async def verify_join(callback: CallbackQuery):
+    user = callback.from_user
+
     is_joined = await check_channel_membership(
         callback.bot,
-        callback.from_user.id
+        user.id
     )
 
     if is_joined:
+        await save_user(user)
+
         await callback.message.edit_text(
-            "✅ Channel verification successful!\n\n"
-            "Send /start to open the main menu."
+            f"✅ Welcome, {escape(user.first_name)}!\n\n"
+            "Channel verification successful.\n"
+            "You can now use Trusted Money.",
+            reply_markup=main_menu()
         )
+
+        await callback.answer("Verification successful!")
+
     else:
         await callback.answer(
             "Please join the official channel first.",
@@ -113,11 +135,14 @@ async def back_home(callback: CallbackQuery):
 async def profile_handler(callback: CallbackQuery):
     user = callback.from_user
 
+    name = escape(user.full_name or "Unknown")
+    username = escape(user.username) if user.username else "Not Set"
+
     await callback.message.edit_text(
         "👤 <b>Your Profile</b>\n\n"
-        f"Name: {user.full_name}\n"
+        f"Name: {name}\n"
         f"Telegram ID: <code>{user.id}</code>\n"
-        f"Username: @{user.username or 'Not Set'}",
+        f"Username: @{username}",
         reply_markup=back_button()
     )
 

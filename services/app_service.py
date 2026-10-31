@@ -1,3 +1,4 @@
+
 from sqlalchemy import select
 
 from database import SessionLocal
@@ -13,14 +14,25 @@ async def add_app(
     risk_status: str = "Unverified",
     launch_date: str | None = None,
 ):
+    title = title.strip()
+    category = category.strip()
+    source = source.strip()
+    url = url.strip()
+
+    if not title or not category or not source or not url:
+        raise ValueError("Title, category, source and URL are required.")
+
+    if not url.startswith(("https://", "http://")):
+        raise ValueError("Please provide a valid HTTP or HTTPS URL.")
+
     async with SessionLocal() as session:
         app = AppListing(
             title=title,
             category=category,
             source=source,
             url=url,
-            description=description,
-            risk_status=risk_status,
+            description=description.strip(),
+            risk_status=risk_status.strip(),
             launch_date=launch_date,
             active=True,
         )

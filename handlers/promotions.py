@@ -7,8 +7,7 @@ from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 
-from database import SessionLocal
-from models import PromotionRequest
+from services.promotion_service import create_promotion_request
 from keyboards import back_button
 from config import settings
 
@@ -89,22 +88,27 @@ async def get_budget(message: Message, state: FSMContext):
     data = await state.get_data()
     budget = message.text.strip()[:100]
 
-    request = PromotionRequest(
-        telegram_id=message.from_user.id,
-        service_type=data["service_type"],
-        details=data["details"],
-        budget=budget,
-        status="Pending",
-    )
-
-    async with SessionLocal() as session:
-        session.add(request)
-        await session.commit()
+    try:
+        request = await create_promotion_request(
+            telegram_id=message.from_user.id,
+            service_type=data["service_type"],
+            details=data["details"],
+            budget=budget,
+        )
+    except ValueError as error:
+        await message.answer(f"❌ {escape(str(error))}")
+        return
+    except Exception:
+        await message.answer(
+            "❌ Could not save your request. Please try again."
+        )
+        return
 
     await state.clear()
 
     await message.answer(
         "✅ <b>Promotion Request Submitted!</b>\n\n"
+        f"Request ID: <code>{request.id}</code>\n"
         "Your request has been saved.\n"
         "The owner will review it.",
         reply_markup=back_button()
@@ -114,6 +118,7 @@ async def get_budget(message: Message, state: FSMContext):
         await message.bot.send_message(
             settings.OWNER_ID,
             "📣 <b>New Promotion Request</b>\n\n"
+            f"Request ID: <code>{request.id}</code>\n"
             f"User ID: <code>{message.from_user.id}</code>\n"
             f"Service: {escape(data['service_type'])}\n"
             f"Details: {escape(data['details'])}\n"

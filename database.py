@@ -24,11 +24,11 @@ SessionLocal = async_sessionmaker(
 
 
 async def init_db():
-    from models import Base as ModelsBase
+    import models
 
     async with engine.begin() as connection:
         await connection.run_sync(
-            ModelsBase.metadata.create_all
+            Base.metadata.create_all
         )
 
 

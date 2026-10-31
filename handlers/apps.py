@@ -29,35 +29,57 @@ async def show_app_categories(callback: CallbackQuery):
     "risk_alerts"
 ]))
 async def show_apps(callback: CallbackQuery):
+
     category_map = {
         "category_playstore": "Play Store",
         "category_website": "Website",
         "category_telegram": "Telegram",
         "category_apk": "APK",
-        "trending": "Trending",
-        "new_apps": "New",
-        "risk_alerts": "Risk"
     }
 
-    selected = category_map[callback.data]
+    selected = category_map.get(
+        callback.data,
+        {
+            "trending": "Trending",
+            "new_apps": "New",
+            "risk_alerts": "Risk"
+        }.get(callback.data, "Apps")
+    )
 
     async with SessionLocal() as session:
+
         query = select(AppListing).where(
             AppListing.active.is_(True)
         )
 
-        if selected not in ("Trending", "New", "Risk"):
+        if callback.data in category_map:
             query = query.where(
                 AppListing.category == selected
             )
-        elif selected == "Risk":
+
+        elif callback.data == "trending":
+            query = query.where(
+                AppListing.category == "Trending"
+            )
+
+        elif callback.data == "risk_alerts":
             query = query.where(
                 AppListing.risk_status != "Verified"
             )
 
+        if callback.data == "new_apps":
+            query = query.order_by(
+                AppListing.launch_date.desc()
+            )
+        else:
+            query = query.order_by(
+                AppListing.id.desc()
+            )
+
         result = await session.execute(
-            query.order_by(AppListing.id.desc()).limit(20)
+            query.limit(20)
         )
+
         apps = result.scalars().all()
 
     if not apps:
@@ -77,13 +99,14 @@ async def show_apps(callback: CallbackQuery):
             f"Category: {app.category}\n"
             f"Source: {app.source}\n"
             f"Risk status: {app.risk_status}\n"
+            f"Launch date: {app.launch_date or 'Not available'}\n"
             f"Details: {app.description[:250]}\n"
             f"Link: {app.url}\n"
         )
 
     lines.append(
         "\n⚠️ Earnings are not guaranteed. "
-        "Check app terms and risks before using."
+        "Always check app terms and risks."
     )
 
     await callback.message.edit_text(
@@ -91,4 +114,5 @@ async def show_apps(callback: CallbackQuery):
         reply_markup=back_button(),
         disable_web_page_preview=True
     )
+
     await callback.answer()

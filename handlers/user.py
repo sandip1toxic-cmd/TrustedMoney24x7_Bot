@@ -1,10 +1,11 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message, CallbackQuery
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import settings
 from keyboards import main_menu, back_button
-
+from services.user_service import get_or_create_user
 
 router = Router()
 
@@ -39,8 +40,6 @@ async def start_handler(message: Message):
     )
 
     if not is_joined:
-        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -65,6 +64,12 @@ async def start_handler(message: Message):
             reply_markup=keyboard
         )
         return
+
+    await get_or_create_user(
+        telegram_id=message.from_user.id,
+        username=message.from_user.username,
+        full_name=message.from_user.full_name
+    )
 
     await message.answer(
         f"👋 Welcome, {message.from_user.first_name}!\n\n"

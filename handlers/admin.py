@@ -26,7 +26,16 @@ async def admin_panel(message: Message):
     )
 
 
-@router.callback_query(lambda c: c.data.startswith("admin_"))
+@router.callback_query(
+    lambda c: c.data in {
+        "add_app",
+        "add_loot",
+        "promotions",
+        "users",
+        "stats",
+        "broadcast",
+    }
+)
 async def admin_callbacks(callback: CallbackQuery):
     if not is_owner(callback.from_user.id):
         await callback.answer(
@@ -36,21 +45,17 @@ async def admin_callbacks(callback: CallbackQuery):
         return
 
     messages = {
-        "admin_add_app": "➕ Add App feature will be connected next.",
-        "admin_add_loot": "🎁 Add Loot feature will be connected next.",
-        "admin_promotions": "📣 Promotion Requests will appear here.",
-        "admin_users": "👥 User management will appear here.",
-        "admin_stats": "📊 Bot statistics will appear here.",
-        "admin_broadcast": "📢 Broadcast feature will be connected next.",
+        "add_app": "➕ Add App feature will be connected next.",
+        "add_loot": "🎁 Add Loot feature will be connected next.",
+        "promotions": "📣 Promotion Requests will appear here.",
+        "users": "👥 User management will appear here.",
+        "stats": "📊 Bot statistics will appear here.",
+        "broadcast": "📢 Broadcast feature will be connected next.",
     }
 
-    text = messages.get(
-        callback.data,
-        "Unknown admin option."
-    )
-
     await callback.message.edit_text(
-        text,
+        messages[callback.data],
         reply_markup=back_button()
     )
+
     await callback.answer()

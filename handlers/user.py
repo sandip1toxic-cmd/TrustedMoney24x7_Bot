@@ -2,19 +2,44 @@
 from html import escape
 
 from aiogram import Router, F
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.types import (
     Message,
     CallbackQuery,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
 )
+from aiogram.fsm.context import FSMContext
 
 from config import settings
-from keyboards import main_menu, back_button
+from keyboards import main_menu, back_button, admin_menu
 from services.user_service import get_or_create_user
 
 router = Router()
+
+
+# UNIVERSAL CANCEL
+
+@router.message(Command("cancel"))
+async def cancel_any_form(message: Message, state: FSMContext):
+    if await state.get_state() is None:
+        await message.answer(
+            "ℹ️ There is no active operation to cancel."
+        )
+        return
+
+    await state.clear()
+
+    if message.from_user.id == settings.OWNER_ID:
+        await message.answer(
+            "❌ Operation cancelled.",
+            reply_markup=admin_menu()
+        )
+    else:
+        await message.answer(
+            "❌ Operation cancelled.",
+            reply_markup=back_button()
+        )
 
 
 async def check_channel_membership(bot, user_id: int) -> bool:
@@ -46,6 +71,8 @@ async def save_user(user):
         full_name=user.full_name
     )
 
+
+# START COMMAND
 
 @router.message(CommandStart())
 async def start_handler(message: Message):
@@ -94,6 +121,8 @@ async def start_handler(message: Message):
     )
 
 
+# CHANNEL VERIFICATION
+
 @router.callback_query(F.data == "join_channel")
 async def verify_join(callback: CallbackQuery):
     user = callback.from_user
@@ -122,6 +151,8 @@ async def verify_join(callback: CallbackQuery):
         )
 
 
+# BACK TO HOME
+
 @router.callback_query(F.data == "back_home")
 async def back_home(callback: CallbackQuery):
     await callback.message.edit_text(
@@ -130,6 +161,8 @@ async def back_home(callback: CallbackQuery):
     )
     await callback.answer()
 
+
+# USER PROFILE
 
 @router.callback_query(F.data == "profile")
 async def profile_handler(callback: CallbackQuery):
@@ -147,3 +180,4 @@ async def profile_handler(callback: CallbackQuery):
     )
 
     await callback.answer()
+    

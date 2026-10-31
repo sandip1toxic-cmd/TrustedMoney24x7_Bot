@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
@@ -28,8 +29,7 @@ async def main():
         )
     )
 
-    dp = Dispatcher()
-
+    dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(admin_router)
     dp.include_router(user_router)
     dp.include_router(apps_router)

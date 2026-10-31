@@ -552,9 +552,7 @@ async def broadcast_notice(callback: CallbackQuery):
 async def cancel_admin_form(message: Message, state: FSMContext):
     if await state.get_state() is None:
         return
-
     await state.clear()
-
     if is_owner(message.from_user.id):
         await message.answer(
             "❌ Operation cancelled.",
@@ -562,4 +560,3 @@ async def cancel_admin_form(message: Message, state: FSMContext):
         )
     else:
         await message.answer("Operation cancelled.")
-        
